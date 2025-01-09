@@ -1,0 +1,145 @@
+---
+name: Generate RHCS Data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */2 * * *" # Every 2 hours
+
+env:
+  DEFAULT_PYTHON: "3.13"
+
+concurrency:
+  group: generate-metadata
+
+jobs:
+  generate-metadata:
+    name: Generate plugin metadata
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Check out code
+        uses: actions/checkout@v4.2.2
+
+      - name: 🏗 Install AWS CLI and JQ
+        run: sudo apt-get update && sudo apt-get install -y awscli jq
+
+      - name: 🏗 Set up UV
+        uses: astral-sh/setup-uv@v4.2.0
+        with:
+          version: "latest"
+          python-version: ${{ env.DEFAULT_PYTHON }}
+          enable-cache: true
+
+      - name: 🏗 Install project dependencies
+        run: uv sync --no-group dev
+
+      - name: ⤵️ Download data from Cloudflare R2
+        run: |
+          mkdir -p ./output/plugin/diff
+          aws s3 cp s3://rotorhazard-plugins/plugin/diff/after.json ./output/plugin/diff/before.json --endpoint-url=${{ secrets.CF_R2_ENDPOINT }} || echo "{}" > ./output/plugin/diff/before.json
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+
+      - name: 🏗 Generate metadata
+        run: |
+          uv run python scripts/generate_metadata.py
+          mv ./output/plugin/diff/ ./output/diff/
+          mv ./output/plugin/summary.json ./output/summary.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate output with JQ
+        run: |
+          jq -c . output/plugin/data.json
+          jq -c . output/plugin/repositories.json
+
+      - name: Generate diff
+        run: |
+          diff -U 8 output/diff/before.json output/diff/after.json > output/diff/plugin.diff || true
+          cat output/diff/plugin.diff
+
+      - name: Upload diff
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const diffContents = fs.readFileSync('output/diff/plugin.diff');
+
+            core.summary.addDetails('plugin.diff contents', `\n\n\`\`\`diff\n${diffContents}\`\`\`\n\n`);
+            core.summary.write();
+
+      - name: Upload metadata artifacts
+        uses: actions/upload-artifact@v4.5.0
+        with:
+          name: plugin
+          path: |
+            output/plugin
+            output/diff
+            output/summary.json
+          if-no-files-found: error
+          retention-days: 7
+
+  summarize:
+    name: Summarize changes
+    needs: generate-metadata
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: plugin
+          path: output
+
+      - name: Display total summary
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const summaryData = JSON.parse(fs.readFileSync('output/summary.json', 'utf-8'));
+
+            core.summary.addTable([
+              [{data: 'Metric', header: true}, {data: 'Value', header: true}],
+              ['Total Plugins', `${summaryData.total_plugins}`],
+              ['Valid Plugins', `${summaryData.valid_plugins}`],
+              ['Skipped Plugins', `${summaryData.skipped_plugins}`],
+              ['Execution Time (s)', `${summaryData.execution_time_seconds}`],
+            ])
+            .write();
+
+  publish:
+    name: Publish RHCS data
+    needs: summarize
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Install AWS CLI
+        run: sudo apt-get update && sudo apt-get install -y awscli
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: plugin
+          path: output
+
+      - name: ⤴️ Upload data to Cloudflare R2
+        run: |
+          aws s3 sync \
+            output/plugin \
+            s3://rotorhazard-plugins/plugin \
+            --endpoint-url=${{ secrets.CF_R2_ENDPOINT }}
+
+          aws s3 cp \
+            output/diff/after.json \
+            s3://rotorhazard-plugins/plugin/diff/after.json \
+            --endpoint-url=${{ secrets.CF_R2_ENDPOINT }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+
+      - name: Bust Cloudflare cache
+        run: |
+          curl --silent --show-error --fail -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE_ID }}/purge_cache" \
+            -H "Authorization: Bearer ${{ secrets.CF_BUST_CACHE_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'

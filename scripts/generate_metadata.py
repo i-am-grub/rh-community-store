@@ -13,17 +13,22 @@ from time import perf_counter
 from aiogithubapi import GitHubAPI, GitHubException, GitHubNotFoundException
 
 # Loggin setup
+logging.addLevelName(logging.ERROR, "::error::")
+logging.addLevelName(logging.WARNING, "::warning::")
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s: %(levelname)s - %(message)s",
+    format=" %(levelname)s %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
 
 # GitHub API configuration
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 PLUGIN_LIST_FILE = "plugins.json"
-OUTPUT_DIR = "output/plugins"
-Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR = "output/plugin"
+COMPARE_IGNORE = ["last_fetched", "etag_release", "etag_repository"]
+
+# Create output directories
+Path(f"{OUTPUT_DIR}/diff").mkdir(parents=True, exist_ok=True)
 
 
 class RotorHazardPlugin:
@@ -67,7 +72,7 @@ class RotorHazardPlugin:
             )
             if not custom_plugins_folder:
                 logging.error(
-                    f"::error::The `custom_plugins/` folder is missing in {self.repo}."
+                    f"The `custom_plugins/` folder is missing in {self.repo}."
                 )
                 return None
 
@@ -80,8 +85,8 @@ class RotorHazardPlugin:
             # Ensure there is exactly one domain folder
             if len(subfolders) != 1:
                 logging.error(
-                    "::error::Expected exactly one domain folder inside "
-                    f"`custom_plugins/` for '{self.repo}', but found {len(subfolders)}."
+                    "Expected exactly one domain folder inside `custom_plugins/` "
+                    f"for '{self.repo}', but found {len(subfolders)}."
                 )
                 return None
 
@@ -89,7 +94,7 @@ class RotorHazardPlugin:
             self.domain = subfolders[0].name
             logging.info(f"Found domain {self.domain} for {self.repo}")
         except GitHubNotFoundException:
-            logging.warning(f"::error::Repository '{self.repo}' not found.")
+            logging.warning(f"Repository '{self.repo}' not found.")
         except GitHubException:
             logging.exception(f"Error fetching plugin domain for {self.repo}")
         else:
@@ -124,19 +129,18 @@ class RotorHazardPlugin:
             # Compare the domain in the manifest with the folder name
             if manifest_domain != self.domain:
                 logging.error(
-                    f"::error::Domain mismatch for {self.repo}: Folder "
+                    f"Domain mismatch for {self.repo}: Folder "
                     f"'{self.domain}' vs Manifest '{manifest_domain}'."
                 )
                 return False
         except GitHubNotFoundException:
             logging.exception(
-                "::error::Manifest file not found for "
-                f"'{self.repo}' at '{manifest_path}'."
+                f"Manifest file not found for '{self.repo}' at '{manifest_path}'."
             )
         except json.JSONDecodeError:
             logging.exception(
-                f"::error::Manifest file for '{self.repo}' "
-                f"at '{manifest_path}' contains invalid JSON."
+                f"Manifest file for '{self.repo}' at "
+                f"'{manifest_path}' contains invalid JSON."
             )
         except GitHubException:
             logging.exception(f"Error fetching manifest for '{self.repo}'")
@@ -210,7 +214,7 @@ class RotorHazardPlugin:
                 "last_fetched": datetime.now(UTC).isoformat(),
             }
         except GitHubNotFoundException:
-            logging.warning(f"::warning::Repository '{self.repo}' not found.")
+            logging.warning(f"Repository '{self.repo}' not found.")
         except GitHubException:
             logging.exception(f"Error fetching repository metadata for '{self.repo}'")
         else:
@@ -242,6 +246,22 @@ class MetadataGenerator:
             logging.warning("Plugin list file not found. Using an empty list.")
             return []
 
+    def save_filtered_json(self, filepath: str, data: dict) -> None:
+        """Save data to a JSON file with filtered keys.
+
+        Args:
+        ----
+            filepath: Path to the output JSON file.
+            data: Data to be saved.
+
+        """
+        filtered_data = {
+            key: {k: v for k, v in value.items() if k not in COMPARE_IGNORE}
+            for key, value in data.items()
+        }
+        with Path.open(filepath, "w", encoding="utf-8") as f:
+            json.dump(filtered_data, f, indent=2)
+
     def save_json(self, filepath: str, data: dict) -> None:
         """Save data to a JSON file.
 
@@ -252,7 +272,7 @@ class MetadataGenerator:
 
         """
         with Path.open(filepath, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4)
+            json.dump(data, f, indent=2)
 
     async def summarize_results(
         self,
@@ -280,8 +300,8 @@ class MetadataGenerator:
             "skipped_plugins": skipped,
             "execution_time_seconds": round(elapsed_time, 2),
         }
-        logging.info("Metadata generation summary:")
-        logging.info(json.dumps(summary, indent=4))
+        summary_path = f"{self.output_dir}/summary.json"
+        self.save_json(summary_path, summary)
 
     async def generate_metadata(self) -> None:
         """Generate metadata for all repositories."""
@@ -307,6 +327,7 @@ class MetadataGenerator:
                     skipped_plugins += 1
 
         # Save generated metadata to local JSON file
+        self.save_filtered_json(f"{self.output_dir}/diff/after.json", plugin_data)
         self.save_json(f"{self.output_dir}/data.json", plugin_data)
         self.save_json(f"{self.output_dir}/repositories.json", valid_repositories)
 
