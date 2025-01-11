@@ -20,9 +20,6 @@ jobs:
       - name: ⤵️ Check out code
         uses: actions/checkout@v4.2.2
 
-      - name: 🏗 Install AWS CLI and JQ
-        run: sudo apt-get update && sudo apt-get install -y awscli jq
-
       - name: 🏗 Set up UV
         uses: astral-sh/setup-uv@v4.2.0
         with:
@@ -36,7 +33,7 @@ jobs:
       - name: ⤵️ Download data from Cloudflare R2
         run: |
           mkdir -p ./output/plugin/diff
-          aws s3 cp s3://rotorhazard-plugins/plugin/diff/after.json ./output/plugin/diff/before.json --endpoint-url=${{ secrets.CF_R2_ENDPOINT }} || echo "{}" > ./output/plugin/diff/before.json
+          uv run aws s3 cp s3://rotorhazard-plugins/plugin/diff/after.json ./output/plugin/diff/before.json --endpoint-url=${{ secrets.CF_R2_ENDPOINT }} || echo "{}" > ./output/plugin/diff/before.json
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
@@ -51,8 +48,8 @@ jobs:
 
       - name: Validate output with JQ
         run: |
-          jq -c . output/plugin/data.json
-          jq -c . output/plugin/repositories.json
+          uv run jq -c . output/plugin/data.json
+          uv run jq -c . output/plugin/repositories.json
 
       - name: Generate diff
         run: |
@@ -111,9 +108,21 @@ jobs:
     name: Publish RHCS data
     needs: summarize
     runs-on: ubuntu-latest
+    environment:
+      name: plugin
     steps:
-      - name: 🏗 Install AWS CLI
-        run: sudo apt-get update && sudo apt-get install -y awscli
+      - name: ⤵️ Check out code
+        uses: actions/checkout@v4.2.2
+
+      - name: 🏗 Set up UV
+        uses: astral-sh/setup-uv@v4.2.0
+        with:
+          version: "latest"
+          python-version: ${{ env.DEFAULT_PYTHON }}
+          enable-cache: true
+
+      - name: 🏗 Install project dependencies
+        run: uv sync --no-group dev
 
       - name: Download artifacts
         uses: actions/download-artifact@v4.1.8
@@ -123,12 +132,12 @@ jobs:
 
       - name: ⤴️ Upload data to Cloudflare R2
         run: |
-          aws s3 sync \
+          uv run aws s3 sync \
             output/plugin \
             s3://rotorhazard-plugins/plugin \
             --endpoint-url=${{ secrets.CF_R2_ENDPOINT }}
 
-          aws s3 cp \
+          uv run aws s3 cp \
             output/diff/after.json \
             s3://rotorhazard-plugins/plugin/diff/after.json \
             --endpoint-url=${{ secrets.CF_R2_ENDPOINT }}
