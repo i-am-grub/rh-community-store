@@ -1,0 +1,81 @@
+---
+name: Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - plugins.json
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    outputs:
+      repository: ${{ steps.repository.outputs.repository }}
+    steps:
+      - name: ⤵️ Check out code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: ⤵️ Fetch main branch plugins.json
+        run: git fetch origin main --depth=1
+
+      - name: 🏗 Install JQ
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Determine Added Repository
+        id: repository
+        run: |
+          # Get the previous plugins.json from main branch
+          git show origin/main:plugins.json > plugins_old.json
+
+          # Debug: Show the contents of old and new files
+          echo "Contents of plugins_old.json:"
+          cat plugins_old.json
+
+          echo "Contents of plugins.json:"
+          cat plugins.json
+
+          # Compare old and new plugins.json
+          ADDED_REPOS=$(jq -r --slurp '
+            .[1] - .[0] | .[]
+          ' plugins_old.json plugins.json)
+
+          REPO_COUNT=$(echo "$ADDED_REPOS" | wc -l)
+
+          if [ "$REPO_COUNT" -eq 0 ]; then
+            echo "::error::No new repository found in plugins.json. Please ensure the form added the plugin."
+            exit 1
+          elif [ "$REPO_COUNT" -gt 1 ]; then
+            echo "::error::Only one plugin repository can be added per PR. Found $REPO_COUNT repositories."
+            echo "Repositories found:"
+            echo "$ADDED_REPOS" | while read repo; do
+              echo "- $repo"
+            done
+            exit 1
+          fi
+
+          ADDED_REPO=$(echo "$ADDED_REPOS" | tr -d '"')
+          echo "repository=$ADDED_REPO" >> $GITHUB_OUTPUT
+          echo "✅ Found added repository: $ADDED_REPO"
+
+  rhfest:
+    name: RHFest validation
+    needs: preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Clone Added Plugin Repository
+        run: git clone --depth 1 "https://github.com/${{ needs.preflight.outputs.repository }}" .
+
+      - name: Run RHFest Validation
+        uses: docker://ghcr.io/dutchdronesquad/rhfest-action:v1.1.2
