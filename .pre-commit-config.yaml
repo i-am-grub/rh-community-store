@@ -9,7 +9,6 @@ repos:
         entry: uv run ruff check --fix
         require_serial: true
         stages: [pre-commit, pre-push, manual]
-        exclude: wave.py
       - id: ruff-format
         name: 🐶 Ruff Formatter
         language: system
