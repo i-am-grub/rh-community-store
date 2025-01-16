@@ -7,10 +7,12 @@ on:
     - cron: "0 */2 * * *" # Every 2 hours
 
 env:
+  VERSION: "v1"
   DEFAULT_PYTHON: "3.13"
 
 concurrency:
   group: generate-metadata
+  cancel-in-progress: true
 
 jobs:
   generate-metadata:
@@ -33,7 +35,7 @@ jobs:
       - name: ⤵️ Download data from Cloudflare R2
         run: |
           mkdir -p ./output/plugin/diff
-          uv run aws s3 cp s3://rotorhazard-plugins/plugin/diff/after.json ./output/plugin/diff/before.json --endpoint-url=${{ secrets.CF_R2_ENDPOINT }} || echo "{}" > ./output/plugin/diff/before.json
+          uv run aws s3 cp s3://rotorhazard-plugins/${{ env.VERSION }}/plugin/diff/after.json ./output/plugin/diff/before.json --endpoint-url=${{ secrets.CF_R2_ENDPOINT }} || echo "{}" > ./output/plugin/diff/before.json
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
@@ -82,7 +84,7 @@ jobs:
     needs: generate-metadata
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
+      - name: ⤵️ Download artifacts
         uses: actions/download-artifact@v4.1.8
         with:
           name: plugin
@@ -124,7 +126,7 @@ jobs:
       - name: 🏗 Install project dependencies
         run: uv sync --no-group dev
 
-      - name: Download artifacts
+      - name: ⤵️ Download artifacts
         uses: actions/download-artifact@v4.1.8
         with:
           name: plugin
@@ -134,12 +136,12 @@ jobs:
         run: |
           uv run aws s3 sync \
             output/plugin \
-            s3://rotorhazard-plugins/plugin \
+            s3://rotorhazard-plugins/${{ env.VERSION }}/plugin \
             --endpoint-url=${{ secrets.CF_R2_ENDPOINT }}
 
           uv run aws s3 cp \
             output/diff/after.json \
-            s3://rotorhazard-plugins/plugin/diff/after.json \
+            s3://rotorhazard-plugins/${{ env.VERSION }}/plugin/diff/after.json \
             --endpoint-url=${{ secrets.CF_R2_ENDPOINT }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
