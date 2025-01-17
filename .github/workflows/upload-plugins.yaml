@@ -1,5 +1,5 @@
 ---
-name: Generate RHCS Data
+name: Upload plugins to R2
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  generate-metadata:
+  upload-plugins:
     name: Generate plugin metadata
     runs-on: ubuntu-latest
     steps:
@@ -68,7 +68,7 @@ jobs:
             core.summary.addDetails('plugin.diff contents', `\n\n\`\`\`diff\n${diffContents}\`\`\`\n\n`);
             core.summary.write();
 
-      - name: Upload metadata artifacts
+      - name: Upload metadata Artifacts
         uses: actions/upload-artifact@v4.5.0
         with:
           name: plugin
