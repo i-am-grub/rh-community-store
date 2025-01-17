@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  upload-plugins:
+  generate-metadata:
     name: Generate plugin metadata
     runs-on: ubuntu-latest
     steps:
