@@ -9,6 +9,7 @@ on:
       - plugins.json
 
 env:
+  VERSION: "v1"
   DEFAULT_PYTHON: "3.13"
 
 concurrency:
