@@ -74,7 +74,7 @@ jobs:
       - name: ⤴️ Upload data to Cloudflare R2
         run: |
           uv run aws s3 sync \
-            output/removed \
+            output \
             s3://rotorhazard-plugins/${{ env.VERSION }}/removed \
             --endpoint-url=${{ secrets.CF_R2_ENDPOINT }}
         env:
