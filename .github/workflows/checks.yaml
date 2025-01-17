@@ -54,8 +54,8 @@ jobs:
           ADDED_REPOS=$(jq -r --slurp '.[1] - .[0] | .[]' plugins_old.json plugins.json)
           REMOVED_REPOS=$(jq -r --slurp '.[0] - .[1] | .[]' plugins_old.json plugins.json)
 
-          ADDED_COUNT=$(echo "$ADDED_REPOS" | wc -l)
-          REMOVED_COUNT=$(echo "$REMOVED_REPOS" | wc -l)
+          ADDED_COUNT=$(echo "$ADDED_REPOS" | sed '/^\s*$/d' | wc -l)
+          REMOVED_COUNT=$(echo "$REMOVED_REPOS" | sed '/^\s*$/d' | wc -l)
 
           if [ "$ADDED_COUNT" -eq 1 ] && [ "$REMOVED_COUNT" -eq 0 ]; then
             echo "✅ One repository added: $ADDED_REPOS"
@@ -67,13 +67,15 @@ jobs:
             echo "action=remove" >> $GITHUB_OUTPUT
           else
             echo "::error::PR must add or remove exactly one repository."
+            echo "Added repositories: $ADDED_REPOS"
+            echo "Removed repositories: $REMOVED_REPOS"
             echo "Added count: $ADDED_COUNT"
             echo "Removed count: $REMOVED_COUNT"
             exit 1
           fi
 
   removed:
-    name: Removed repository validation
+    name: Removed validation
     if: ${{ needs.preflight.outputs.action == 'add' }}
     needs: preflight
     runs-on: ubuntu-latest
@@ -91,8 +93,15 @@ jobs:
       - name: 🏗 Install project dependencies
         run: uv sync --no-group dev
 
+      - name: ⤵️ Download data from Cloudflare R2
+        run: |
+          uv run aws s3 cp s3://rotorhazard-plugins/${{ env.VERSION }}/removed/repositories.json ./repositories.json --endpoint-url=${{ secrets.CF_R2_ENDPOINT }} || echo "[]" > repositories.json
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+
       - name: 🚀 Run validation
-        run: uv run python scripts/check/removed.py
+        run: uv run python scripts/check/removed.py --data-file repositories.json
         env:
           REPOSITORY: ${{ needs.preflight.outputs.repository }}
 

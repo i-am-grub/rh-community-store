@@ -1,1 +1,7 @@
-[]
+[
+  {
+    "reason": "This test plugin will steal your cookies!",
+    "removal_type": "critical",
+    "repository": "monster/test"
+  }
+]
