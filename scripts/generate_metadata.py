@@ -222,23 +222,6 @@ class RotorHazardPlugin:
                 )
                 self.repo = full_name  # Update the repo name
 
-            # Fetch rest of the metadata
-            if repo_data.etag:
-                self.etag_repository = repo_data.etag
-            last_version = await self.fetch_releases(github)
-
-            self.metadata = {
-                "etag_release": self.etag_release,
-                "etag_repository": self.etag_repository,
-                "last_fetched": datetime.now(UTC).isoformat(),
-                "last_updated": repo_data.data.updated_at,
-                "last_version": last_version,
-                "open_issues": repo_data.data.open_issues_count,
-                "repository": self.repo,
-                "stargazers_count": repo_data.data.stargazers_count,
-                "topics": repo_data.data.topics,
-            }
-
             # Fetch plugin domain
             if not await self.get_plugin_domain(github):
                 return None
@@ -246,6 +229,23 @@ class RotorHazardPlugin:
             # Validate domain and manifest
             if not await self.validate_domain_manifest(github):
                 return None
+
+            # Fetch rest of the metadata
+            if repo_data.etag:
+                self.etag_repository = repo_data.etag
+            last_version = await self.fetch_releases(github)
+
+            self.metadata = {
+                "repository": self.repo,
+                "etag_release": self.etag_release,
+                "etag_repository": self.etag_repository,
+                "last_fetched": datetime.now(UTC).isoformat(),
+                "last_updated": repo_data.data.updated_at,
+                "last_version": last_version,
+                "open_issues": repo_data.data.open_issues_count,
+                "stargazers_count": repo_data.data.stargazers_count,
+                "topics": repo_data.data.topics,
+            }
 
             # Add manifest-specific metadata
             self.metadata = {
