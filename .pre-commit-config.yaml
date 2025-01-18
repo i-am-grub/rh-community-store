@@ -16,6 +16,11 @@ repos:
         entry: uv run ruff format
         require_serial: true
         stages: [pre-commit, pre-push, manual]
+      - id: sort-json
+        name: 🧹 Sort JSON files
+        entry: uv run python scripts/sort_json.py
+        language: system
+        files: ^(removed\.json|plugins\.json)$
       - id: check-ast
         name: 🐍 Check Python AST
         language: system
