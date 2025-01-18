@@ -69,7 +69,7 @@ jobs:
             core.summary.write();
 
       - name: Upload metadata Artifacts
-        uses: actions/upload-artifact@v4.5.0
+        uses: actions/upload-artifact@v4.6.0
         with:
           name: plugin
           path: |
