@@ -101,8 +101,9 @@ jobs:
               [{data: 'Metric', header: true}, {data: 'Value', header: true}],
               ['Total Plugins', `${summaryData.total_plugins}`],
               ['Valid Plugins', `${summaryData.valid_plugins}`],
-              ['Skipped Plugins', `${summaryData.skipped_plugins}`],
               ['Archived Plugins', `${summaryData.archived_plugins}`],
+              ['Renamed Plugins', `${summaryData.renamed_plugins}`],
+              ['Skipped Plugins', `${summaryData.skipped_plugins}`],
               ['Execution Time (s)', `${summaryData.execution_time_seconds}`],
             ])
             .write();
