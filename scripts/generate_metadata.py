@@ -13,6 +13,7 @@ from time import perf_counter
 from aiogithubapi import GitHubAPI, GitHubException, GitHubNotFoundException
 
 # Loggin setup
+logging.addLevelName(logging.INFO, "")
 logging.addLevelName(logging.ERROR, "::error::")
 logging.addLevelName(logging.WARNING, "::warning::")
 logging.basicConfig(
@@ -55,8 +56,8 @@ class RotorHazardPlugin:
             str | None: Plugin domain name.
 
         """
-        logging.info(f"Fetching plugin domain for {self.repo}")
         try:
+            logging.info(f"<{self.repo}> Fetching plugin domain")
             response = await github.repos.contents.get(
                 self.repo, etag=self.etag_repository
             )
@@ -71,9 +72,7 @@ class RotorHazardPlugin:
                 None,
             )
             if not custom_plugins_folder:
-                logging.error(
-                    f"The `custom_plugins/` folder is missing in {self.repo}."
-                )
+                logging.error(f"<{self.repo}> The `custom_plugins/` folder is missing")
                 return None
 
             # Fetch the contens of the `custom_plugins/` folder
@@ -85,18 +84,18 @@ class RotorHazardPlugin:
             # Ensure there is exactly one domain folder
             if len(subfolders) != 1:
                 logging.error(
-                    "Expected exactly one domain folder inside `custom_plugins/` "
-                    f"for '{self.repo}', but found {len(subfolders)}."
+                    f"<{self.repo}> Expected exactly one domain folder inside "
+                    f"`custom_plugins/` but found: {len(subfolders)}."
                 )
                 return None
 
             # Get the domain folder name
             self.domain = subfolders[0].name
-            logging.info(f"Found domain {self.domain} for {self.repo}")
+            logging.info(f"<{self.repo}> Found domain '{self.domain}'")
         except GitHubNotFoundException:
-            logging.warning(f"Repository '{self.repo}' not found.")
+            logging.warning(f"<{self.repo}> Repository not found")
         except GitHubException:
-            logging.exception(f"Error fetching plugin domain for {self.repo}")
+            logging.exception(f"<{self.repo}> Error fetching plugin domain")
         else:
             return self.domain
 
@@ -129,24 +128,24 @@ class RotorHazardPlugin:
             # Compare the domain in the manifest with the folder name
             if manifest_domain != self.domain:
                 logging.error(
-                    f"Domain mismatch for {self.repo}: Folder "
-                    f"'{self.domain}' vs Manifest '{manifest_domain}'."
+                    f"<{self.repo}> Domain mismatch: Folder "
+                    f"'{self.domain}' vs Manifest '{manifest_domain}'"
                 )
                 return False
         except GitHubNotFoundException:
             logging.exception(
-                f"Manifest file not found for '{self.repo}' at '{manifest_path}'."
+                f"<{self.repo}> Manifest file not found at '{manifest_path}'"
             )
         except json.JSONDecodeError:
             logging.exception(
-                f"Manifest file for '{self.repo}' at "
-                f"'{manifest_path}' contains invalid JSON."
+                f"<{self.repo}> Manifest file at '{manifest_path}' "
+                "contains invalid JSON"
             )
         except GitHubException:
             logging.exception(f"Error fetching manifest for '{self.repo}'")
         else:
             logging.info(
-                f"Domain validated for {self.repo}: '{self.domain}' "
+                f"<{self.repo}> Domain validated: '{self.domain}' "
                 "matches manifest domain."
             )
             return True
@@ -163,15 +162,16 @@ class RotorHazardPlugin:
             str | None: Latest release tag.
 
         """
+        logging.info(f"<{self.repo}> Fetching releases")
         try:
             releases = await github.repos.releases.list(self.repo)
             if releases.etag:
                 self.etag_release = releases.etag
             return releases.data[0].tag_name if releases.data else None
         except GitHubNotFoundException:
-            logging.warning(f"Releases not found for '{self.repo}'.")
+            logging.warning(f"<{self.repo}> Zero github releases found")
         except GitHubException:
-            logging.exception(f"Error fetching releases for '{self.repo}'.")
+            logging.exception(f"<{self.repo}> Error fetching releases")
         return None
 
     async def update_metadata(self, github: GitHubAPI) -> dict | None:
@@ -192,6 +192,7 @@ class RotorHazardPlugin:
             return None
 
         try:
+            logging.info(f"<{self.repo}> Fetching repository metadata")
             repo_data = await github.repos.get(self.repo)
             if repo_data.etag:
                 self.etag_repository = repo_data.etag
@@ -214,11 +215,11 @@ class RotorHazardPlugin:
                 "last_fetched": datetime.now(UTC).isoformat(),
             }
         except GitHubNotFoundException:
-            logging.warning(f"Repository '{self.repo}' not found.")
+            logging.warning(f"<{self.repo}> Repository not found")
         except GitHubException:
-            logging.exception(f"Error fetching repository metadata for '{self.repo}'")
+            logging.exception(f"<{self.repo}> Error fetching repository metadata")
         else:
-            logging.info(f"Metadata successfully generated for '{self.repo}'.")
+            logging.info(f"<{self.repo}> Metadata successfully generated")
             return {repo_data.data.id: self.metadata}
 
 
