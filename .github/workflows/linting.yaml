@@ -7,6 +7,8 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 env:
@@ -58,3 +60,29 @@ jobs:
         run: uv run pre-commit run end-of-file-fixer --all-files
       - name: 🚀 Trim Trailing Whitespace
         run: uv run pre-commit run trailing-whitespace --all-files
+
+  jq:
+    name: JQ
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v4.2.2
+      - name: Validate
+        run: jq --raw-output . *.json
+
+  jsonschema:
+    name: JSON Schema
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v4.2.2
+      - name: Repositories
+        uses: cardinalby/schema-validator-action@3.1.1
+        with:
+          file: plugins.json
+          schema: tools/jsonschema/repositories.schema.json
+      - name: Removed
+        uses: cardinalby/schema-validator-action@3.1.1
+        with:
+          file: removed.json
+          schema: tools/jsonschema/removed.schema.json
