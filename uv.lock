@@ -88,7 +88,7 @@ wheels = [
 
 [[package]]
 name = "awscli"
-version = "1.36.38"
+version = "1.37.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore" },
@@ -98,9 +98,9 @@ dependencies = [
     { name = "rsa" },
     { name = "s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/e5/da45e23340ef0e5e401301208ab47bcab98fbd3a9329f7c337edfd82a43e/awscli-1.36.38.tar.gz", hash = "sha256:e640f3c788e902e5791ac91e16d848806fb3fc586558b12aa0eb76c44c261e55", size = 1848967 }
+sdist = { url = "https://files.pythonhosted.org/packages/56/28/935212348579ded28322cfc3e116f69df2a99d83b3d92bda8d66873dc0b9/awscli-1.37.2.tar.gz", hash = "sha256:5614fd41a5cdf5f3b5c4bd9d94fca4172a77ce6d6403d59f9334eea2702b979f", size = 1851667 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9f/55/f88c4918e7a19a171fea5644a10e807658ec3cb18eaa22c5f37cbbc9b0db/awscli-1.36.38-py3-none-any.whl", hash = "sha256:2c5ea98b5de0f35b3273255f5268e20cabccef4df408f31afc61cc16dce72c82", size = 4560423 },
+    { url = "https://files.pythonhosted.org/packages/25/fc/56bab248bb5116aab00f564f1a38a0fbc670949c91d63c3ef83cfdd34610/awscli-1.37.2-py3-none-any.whl", hash = "sha256:8ef8d158732b53e12afd2bc2a26fc64fcafab6ae71b8a12640750413c055a5aa", size = 4566815 },
 ]
 
 [[package]]
@@ -114,16 +114,16 @@ wheels = [
 
 [[package]]
 name = "botocore"
-version = "1.35.97"
+version = "1.36.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jmespath" },
     { name = "python-dateutil" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/cd/79656501384e265c9b3099358da2ec6a18568ddf44e5dd61582692a3e7b3/botocore-1.35.97.tar.gz", hash = "sha256:88f2fab29192ffe2f2115d5bafbbd823ff4b6eb2774296e03ec8b5b0fe074f61", size = 13488547 }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/93/353b70cea6447e37789fc2d6f761fc12ae36fb4adb6f558055de8cdf655f/botocore-1.36.2.tar.gz", hash = "sha256:a1fe6610983f0214b0c7655fe6990b6a731746baf305b182976fc7b568fc3cb0", size = 13505440 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/81/ce588b6713ce81f2b95a4097ebd4047e38f5925f5d4c07abc73087744bc1/botocore-1.35.97-py3-none-any.whl", hash = "sha256:fed4f156b1a9b8ece53738f702ba5851b8c6216b4952de326547f349cc494f14", size = 13289762 },
+    { url = "https://files.pythonhosted.org/packages/0c/fe/c066e8cb069027c12dbcf9066a7a4f3e9d2a31b10c7b174a8455ef1d0f46/botocore-1.36.2-py3-none-any.whl", hash = "sha256:bc3b7e3b573a48af2bd7116b80fe24f9a335b0b67314dcb2697a327d009abf29", size = 13302324 },
 ]
 
 [[package]]
@@ -452,14 +452,14 @@ wheels = [
 
 [[package]]
 name = "s3transfer"
-version = "0.10.4"
+version = "0.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/0a/1cdbabf9edd0ea7747efdf6c9ab4e7061b085aa7f9bfc36bb1601563b069/s3transfer-0.10.4.tar.gz", hash = "sha256:29edc09801743c21eb5ecbc617a152df41d3c287f67b615f73e5f750583666a7", size = 145287 }
+sdist = { url = "https://files.pythonhosted.org/packages/1a/aa/fdd958c626b00e3f046d4004363e7f1a2aba4354f78d65ceb3b217fa5eb8/s3transfer-0.11.1.tar.gz", hash = "sha256:3f25c900a367c8b7f7d8f9c34edc87e300bde424f779dc9f0a8ae4f9df9264f6", size = 146952 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/05/7957af15543b8c9799209506df4660cba7afc4cf94bfb60513827e96bed6/s3transfer-0.10.4-py3-none-any.whl", hash = "sha256:244a76a24355363a68164241438de1b72f8781664920260c48465896b712a41e", size = 83175 },
+    { url = "https://files.pythonhosted.org/packages/5f/ce/22673f4a85ccc640735b4f8d12178a0f41b5d3c6eda7f33756d10ce56901/s3transfer-0.11.1-py3-none-any.whl", hash = "sha256:8fa0aa48177be1f3425176dfe1ab85dcd3d962df603c3dbfc585e6bf857ef0ff", size = 84111 },
 ]
 
 [[package]]
@@ -482,16 +482,16 @@ wheels = [
 
 [[package]]
 name = "virtualenv"
-version = "20.28.1"
+version = "20.29.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "distlib" },
     { name = "filelock" },
     { name = "platformdirs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/50/39/689abee4adc85aad2af8174bb195a819d0be064bf55fcc73b49d2b28ae77/virtualenv-20.28.1.tar.gz", hash = "sha256:5d34ab240fdb5d21549b76f9e8ff3af28252f5499fb6d6f031adac4e5a8c5329", size = 7650532 }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/ca/f23dcb02e161a9bba141b1c08aa50e8da6ea25e6d780528f1d385a3efe25/virtualenv-20.29.1.tar.gz", hash = "sha256:b8b8970138d32fb606192cb97f6cd4bb644fa486be9308fb9b63f81091b5dc35", size = 7658028 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/8f/dfb257ca6b4e27cb990f1631142361e4712badab8e3ca8dc134d96111515/virtualenv-20.28.1-py3-none-any.whl", hash = "sha256:412773c85d4dab0409b83ec36f7a6499e72eaf08c80e81e9576bca61831c71cb", size = 4276719 },
+    { url = "https://files.pythonhosted.org/packages/89/9b/599bcfc7064fbe5740919e78c5df18e5dceb0887e676256a1061bb5ae232/virtualenv-20.29.1-py3-none-any.whl", hash = "sha256:4e4cb403c0b0da39e13b46b1b2476e505cb0046b25f242bee80f62bf990b2779", size = 4282379 },
 ]
 
 [[package]]
