@@ -5,6 +5,7 @@
   "rebaseWhen": "behind-base-branch",
   "dependencyDashboard": true,
   "labels": ["dependencies"],
+  "ignoreDeps": ["awscli"],
   "lockFileMaintenance": {
     "enabled": true,
     "automerge": true
