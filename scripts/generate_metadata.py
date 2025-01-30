@@ -169,7 +169,7 @@ class RotorHazardPlugin:
             )
             return True
 
-    async def fetch_releases(self, github: GitHubAPI) -> str | None:
+    async def fetch_releases(self, github: GitHubAPI) -> tuple[str | None, str | None]:
         """Fetch the latest release tag from GitHub.
 
         Args:
@@ -178,7 +178,7 @@ class RotorHazardPlugin:
 
         Returns:
         -------
-            str | None: Latest release tag.
+            tuple[str | None, str | None]: Latest release and prerelease.
 
         """
         logging.info(f"<{self.repo}> Fetching releases")
@@ -186,12 +186,32 @@ class RotorHazardPlugin:
             releases = await github.repos.releases.list(self.repo)
             if releases.etag:
                 self.etag_release = releases.etag
-            return releases.data[0].tag_name if releases.data else None
+
+            if not releases.data:
+                logging.warning(f"<{self.repo}> No releases found")
+                return None, None
+
+            # Ensure releases are sorted by creation date (newest first)
+            sorted_releases = sorted(
+                releases.data, key=lambda r: r.created_at, reverse=True
+            )
+            # Extract latest stable and prerelease versions
+            latest_release = next(
+                (r.tag_name for r in sorted_releases if not r.prerelease), None
+            )
+            latest_prerelease = next(
+                (r.tag_name for r in sorted_releases if r.prerelease), None
+            )
+
+            logging.info(f"<{self.repo}> Latest stable release: {latest_release}")
+            if latest_prerelease:
+                logging.info(f"<{self.repo}> Latest prerelease: {latest_prerelease}")
         except GitHubNotFoundException:
             logging.warning(f"<{self.repo}> Zero github releases found")
         except GitHubException:
             logging.exception(f"<{self.repo}> Error fetching releases")
-        return None
+        else:
+            return latest_release, latest_prerelease
 
     async def fetch_metadata(self, github: GitHubAPI) -> dict | str | None:
         """Fetch and update the plugin's metadata.
@@ -233,19 +253,24 @@ class RotorHazardPlugin:
             # Fetch rest of the metadata
             if repo_data.etag:
                 self.etag_repository = repo_data.etag
-            last_version = await self.fetch_releases(github)
+            last_version, last_prerelease_version = await self.fetch_releases(github)
 
             self.metadata = {
-                "repository": self.repo,
                 "etag_release": self.etag_release,
                 "etag_repository": self.etag_repository,
                 "last_fetched": datetime.now(UTC).isoformat(),
                 "last_updated": repo_data.data.updated_at,
                 "last_version": last_version,
                 "open_issues": repo_data.data.open_issues_count,
+                "repository": self.repo,
                 "stargazers_count": repo_data.data.stargazers_count,
                 "topics": repo_data.data.topics,
             }
+
+            # Add prerelease version if available
+            if last_prerelease_version:
+                self.metadata["last_prerelease"] = last_prerelease_version
+            self.metadata = dict(sorted(self.metadata.items()))
 
             # Add manifest-specific metadata
             self.metadata = {
