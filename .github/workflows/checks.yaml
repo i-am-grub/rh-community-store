@@ -116,4 +116,4 @@ jobs:
         run: git clone --depth 1 "https://github.com/${{ needs.preflight.outputs.repository }}" .
 
       - name: 🚀 Run RHFest Validation
-        uses: docker://ghcr.io/dutchdronesquad/rhfest-action:v1.1.2
+        uses: docker://ghcr.io/dutchdronesquad/rhfest-action:v1.2.0
