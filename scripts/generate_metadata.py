@@ -118,7 +118,7 @@ class RotorHazardPlugin:
         else:
             return self.domain
 
-    async def validate_domain_manifest(self, github: GitHubAPI) -> bool:
+    async def validate_manifest_domain(self, github: GitHubAPI) -> bool:
         """Validate that the domain in `manifest.json` matches the folder name.
 
         Args:
@@ -168,6 +168,52 @@ class RotorHazardPlugin:
                 "matches manifest domain."
             )
             return True
+
+    async def validate_manifest_version(
+        self,
+        last_version: str | None,
+        prerelease_version: str | None,
+    ) -> bool:
+        """Validate if version in manifest.json matches the latest stable or prerelease.
+
+        Args:
+        ----
+            last_version: Latest stable release tag.
+            prerelease_version: Latest prerelease tag.
+
+        Returns:
+        -------
+            bool: `True` if the version is valid, `False` if there is a mismatch.
+
+        """
+
+        def normalize_version(version: str | None) -> str | None:
+            """Remove 'v' prefix from version strings."""
+            return version.lstrip("v") if version else None
+
+        logging.info(f"<{self.repo}> Validating manifest version")
+        manifest_version = self.manifest_data.get("version")
+
+        if not manifest_version:
+            logging.error(f"<{self.repo}> Manifest version is missing")
+            return False
+
+        last_version = normalize_version(last_version)
+        prerelease_version = normalize_version(prerelease_version)
+
+        # If the version matches either stable or prerelease
+        if manifest_version in {last_version, prerelease_version}:
+            return True
+
+        # Mismatch - version is outdated
+        warning_message = (
+            f"<{self.repo}> Version mismatch: '{manifest_version}' "
+            f"(manifest) vs '{last_version}' (latest stable)"
+        )
+        if prerelease_version:
+            warning_message += f", '{prerelease_version}' (prerelease)"
+        logging.warning(warning_message)
+        return False
 
     async def fetch_releases(self, github: GitHubAPI) -> tuple[str | None, str | None]:
         """Fetch the latest release tag from GitHub.
@@ -247,13 +293,16 @@ class RotorHazardPlugin:
                 return None
 
             # Validate domain and manifest
-            if not await self.validate_domain_manifest(github):
+            if not await self.validate_manifest_domain(github):
                 return None
 
             # Fetch rest of the metadata
             if repo_data.etag:
                 self.etag_repository = repo_data.etag
             last_version, last_prerelease_version = await self.fetch_releases(github)
+
+            # Validate manifest version against github releases
+            await self.validate_manifest_version(last_version, last_prerelease_version)
 
             self.metadata = {
                 "etag_release": self.etag_release,
